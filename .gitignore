@@ -1,0 +1,6 @@
+.ollama/
+AppData/
+*.exe
+*.log
+__pycache__/
+.vscode/
