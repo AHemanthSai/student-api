@@ -43,15 +43,27 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Error reading Ollama response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	var result map[string]interface{}
+	// Decode only the "response" field
+	var result struct {
+		Response string `json:"response"`
+	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		http.Error(w, "Error decoding Ollama response", http.StatusInternalServerError)
 		return
 	}
 
-	summary, _ := result["response"].(string)
-	json.NewEncoder(w).Encode(map[string]string{"summary": summary})
+	if result.Response == "" {
+		http.Error(w, "Ollama response was empty", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"summary": result.Response})
 }
+
 
