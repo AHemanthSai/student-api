@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -19,37 +20,35 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prompt construction
-	prompt := "Summarize this student:\nName: " + s.Name + "\nEmail: " + s.Email + "\nAge: " + strconv.Itoa(s.Age)
+	prompt := "Summarize this student's profile:\n\n" +
+		"Name: " + s.Name + "\n" +
+		"Email: " + s.Email + "\n" +
+		"Age: " + strconv.Itoa(s.Age)
 
-	// Prepare the request payload
 	requestBody, _ := json.Marshal(map[string]interface{}{
 		"model":  "llama3",
 		"prompt": prompt,
 		"stream": false,
 	})
 
-	// Use your ngrok-exposed Ollama server here
-	ollamaURL := "https://5888-2405-201-c054-88da-5c4b-5d55-1c8c-c91e.ngrok-free.app/api/generate"
-
+	ollamaURL := os.Getenv("OLLAMA_URL")
+	if ollamaURL == "" {
+		http.Error(w, "OLLAMA_URL environment variable not set", http.StatusInternalServerError)
+		return
+	}
 
 	resp, err := http.Post(ollamaURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
-		http.Error(w, "Error calling Ollama", http.StatusInternalServerError)
-		log.Println("Error calling Ollama:", err)
+		http.Error(w, "Error calling Ollama: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Error reading Ollama response", http.StatusInternalServerError)
-		return
-	}
+	body, _ := io.ReadAll(resp.Body)
 
 	var result map[string]interface{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		http.Error(w, "Error parsing JSON", http.StatusInternalServerError)
+		http.Error(w, "Error decoding Ollama response", http.StatusInternalServerError)
 		return
 	}
 
