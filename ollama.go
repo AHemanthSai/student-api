@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -49,17 +50,20 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode only the "response" field
+	// Try strict decode first
 	var result struct {
 		Response string `json:"response"`
 	}
-	if err := json.Unmarshal(body, &result); err != nil {
-		http.Error(w, "Error decoding Ollama response", http.StatusInternalServerError)
-		return
-	}
-
-	if result.Response == "" {
-		http.Error(w, "Ollama response was empty", http.StatusInternalServerError)
+	err = json.Unmarshal(body, &result)
+	if err != nil || result.Response == "" {
+		// Fallback to extracting plain text if response is not JSON
+		text := strings.TrimSpace(string(body))
+		if text == "" {
+			http.Error(w, "Empty Ollama response", http.StatusInternalServerError)
+			return
+		}
+		// Send raw string as summary
+		json.NewEncoder(w).Encode(map[string]string{"summary": text})
 		return
 	}
 
