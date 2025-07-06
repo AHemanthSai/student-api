@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 )
@@ -17,8 +18,13 @@ func main() {
 	r.HandleFunc("/students/{id}", DeleteStudent).Methods("DELETE")
 	r.HandleFunc("/students/{id}/summary", GetStudentSummary).Methods("GET")
 
-	log.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Default to 8080 for local dev
+	}
+
+	log.Println("Server running on http://localhost:" + port)
+	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
 
