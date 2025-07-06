@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
+    "strings"
 	"github.com/gorilla/mux"
 )
 
@@ -30,7 +30,7 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 		"stream": false,
 	})
 
-	ollamaURL := os.Getenv("OLLAMA_URL")
+	ollamaURL := strings.TrimSpace(os.Getenv("OLLAMA_URL"))
 	if ollamaURL == "" {
 		http.Error(w, "OLLAMA_URL environment variable not set", http.StatusInternalServerError)
 		return
