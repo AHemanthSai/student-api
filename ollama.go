@@ -25,11 +25,14 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 
 	// Create request body
 	reqBody, _ := json.Marshal(map[string]string{
-		"model":  "mistral", // or llama3 if it fits in your RAM
+		"model":  "mistral", // Or "llama3" if available
 		"prompt": prompt,
 	})
 
-	resp, err := http.Post("http://localhost:11434/api/generate", "application/json", bytes.NewBuffer(reqBody))
+	// ❗ UPDATE THIS: Use your current ngrok public URL here
+	ollamaURL := "https://07be-2405-201-c054-88da-5c4b-5d55-1c8c-c91e.ngrok-free.app/api/generate"
+
+	resp, err := http.Post(ollamaURL, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		http.Error(w, "Error calling Ollama", http.StatusInternalServerError)
 		return
@@ -48,7 +51,9 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"summary": summaryText,
 	})
 }
+
