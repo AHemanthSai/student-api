@@ -11,6 +11,11 @@ import (
 func main() {
 	r := mux.NewRouter()
 
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Student API is running! 🚀"))
+	})
+
 	r.HandleFunc("/students", CreateStudent).Methods("POST")
 	r.HandleFunc("/students", GetStudents).Methods("GET")
 	r.HandleFunc("/students/{id}", GetStudentByID).Methods("GET")
@@ -20,11 +25,9 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080" // Default to 8080 for local dev
+		port = "8080"
 	}
 
 	log.Println("Server running on http://localhost:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
-
-
