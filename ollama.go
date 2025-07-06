@@ -3,7 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -11,49 +12,38 @@ import (
 )
 
 func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
-	idStr := mux.Vars(r)["id"]
-	id, _ := strconv.Atoi(idStr)
-
-	student, exists := students[id]
+	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	s, exists := students[id]
 	if !exists {
 		http.Error(w, "Student not found", http.StatusNotFound)
 		return
 	}
 
-	// Build prompt
-	prompt := fmt.Sprintf("Write a professional summary about a student named %s, aged %d, with email %s.", student.Name, student.Age, student.Email)
+	prompt := "Summarize this student's profile:\n\n" +
+		"Name: " + s.Name + "\n" +
+		"Email: " + s.Email + "\n" +
+		"Age: " + strconv.Itoa(s.Age)
 
-	// Create request body
-	reqBody, _ := json.Marshal(map[string]string{
-		"model":  "mistral", // Or "llama3" if available
+	requestBody, _ := json.Marshal(map[string]string{
+		"model":  "llama3",
 		"prompt": prompt,
 	})
 
-	// ❗ UPDATE THIS: Use your current ngrok public URL here
-	ollamaURL := "https://07be-2405-201-c054-88da-5c4b-5d55-1c8c-c91e.ngrok-free.app/api/generate"
-
-	resp, err := http.Post(ollamaURL, "application/json", bytes.NewBuffer(reqBody))
+	ollamaURL := "https://0654-2405-201-c054-88da-5c4b-5d55-1c8c-c91e.ngrok-free.app/api/generate"
+	resp, err := http.Post(ollamaURL, "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Error calling Ollama", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 
-	var summaryText string
-	decoder := json.NewDecoder(resp.Body)
-	for decoder.More() {
-		var chunk map[string]interface{}
-		if err := decoder.Decode(&chunk); err != nil {
-			break
-		}
-		if part, ok := chunk["response"].(string); ok {
-			summaryText += part
-		}
-	}
+	body, _ := io.ReadAll(resp.Body)
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"summary": summaryText,
-	})
+	var result map[string]interface{}
+	json.Unmarshal(body, &result)
+
+	summary, _ := result["response"].(string)
+	json.NewEncoder(w).Encode(map[string]string{"summary": summary})
 }
+
 
