@@ -10,20 +10,25 @@ import (
 
 func CreateStudent(w http.ResponseWriter, r *http.Request) {
 	var s Student
-	json.NewDecoder(r.Body).Decode(&s)
-
-	if s.ID == 0 || s.Name == "" || s.Email == "" || s.Age <= 0 {
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
-
+	if s.ID == 0 || s.Name == "" || s.Email == "" || s.Age <= 0 {
+		http.Error(w, "Missing fields", http.StatusBadRequest)
+		return
+	}
 	students[s.ID] = s
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(s)
 }
 
 func GetStudents(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(students)
+	var all []Student
+	for _, s := range students {
+		all = append(all, s)
+	}
+	json.NewEncoder(w).Encode(all)
 }
 
 func GetStudentByID(w http.ResponseWriter, r *http.Request) {
@@ -43,9 +48,11 @@ func UpdateStudent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Student not found", http.StatusNotFound)
 		return
 	}
-
 	var s Student
-	json.NewDecoder(r.Body).Decode(&s)
+	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
 	s.ID = id
 	students[id] = s
 	json.NewEncoder(w).Encode(s)

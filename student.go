@@ -7,4 +7,4 @@ type Student struct {
 	Email string `json:"email"`
 }
 
-var students = make(map[int]Student) // In-memory data
+var students = make(map[int]Student)
