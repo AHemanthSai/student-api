@@ -7,13 +7,23 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-    "strings"
+	"strings"
+
 	"github.com/gorilla/mux"
 )
 
 func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid student ID", http.StatusBadRequest)
+		return
+	}
+
+	mu.RLock()
 	s, exists := students[id]
+	mu.RUnlock()
+
 	if !exists {
 		http.Error(w, "Student not found", http.StatusNotFound)
 		return
@@ -24,11 +34,15 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 		"Email: " + s.Email + "\n" +
 		"Age: " + strconv.Itoa(s.Age)
 
-	requestBody, _ := json.Marshal(map[string]interface{}{
+	requestBody, err := json.Marshal(map[string]interface{}{
 		"model":  "llama3",
 		"prompt": prompt,
 		"stream": false,
 	})
+	if err != nil {
+		http.Error(w, "Error encoding request body", http.StatusInternalServerError)
+		return
+	}
 
 	ollamaURL := strings.TrimSpace(os.Getenv("OLLAMA_URL"))
 	if ollamaURL == "" {
@@ -64,6 +78,3 @@ func GetStudentSummary(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]string{"summary": result.Response})
 }
-
-
-

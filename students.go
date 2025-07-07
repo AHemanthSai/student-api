@@ -1,5 +1,10 @@
 package main
 
+import (
+	"sync"
+)
+
+// Student represents a student's profile
 type Student struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`
@@ -7,4 +12,8 @@ type Student struct {
 	Email string `json:"email"`
 }
 
-var students = make(map[int]Student)
+// students stores all student records in memory
+var (
+	students = make(map[int]Student)
+	mu       sync.RWMutex // Ensures thread-safe access to the students map
+)
